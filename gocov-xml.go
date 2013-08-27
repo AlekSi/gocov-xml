@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -63,6 +64,9 @@ func main() {
 		panic(err)
 	}
 
+	fset := token.NewFileSet()
+	tokenFiles := make(map[string]*token.File)
+
 	// convert packages
 	packages := make([]Package, len(r.Packages))
 	for i, gPackage := range r.Packages {
@@ -84,11 +88,36 @@ func main() {
 				classes[className] = class
 			}
 
-			// FIXME convert statements to lines
+			// from github.com/axw/gocov /gocov/annotate.go#printFunctionSource
+			// Load the file for line information. Probably overkill, maybe
+			// just compute the lines from offsets in here.
+			setContent := false
+			tokenFile := tokenFiles[gFunction.File]
+			if tokenFile == nil {
+				info, err := os.Stat(gFunction.File)
+				if err != nil {
+					panic(err)
+				}
+				tokenFile = fset.AddFile(gFunction.File, fset.Base(), int(info.Size()))
+				setContent = true
+			}
+
+			tokenData, err := ioutil.ReadFile(gFunction.File)
+			if err != nil {
+				panic(err)
+			}
+			if setContent {
+				// This processes the content and records line number info.
+				tokenFile.SetLinesForContent(tokenData)
+			}
+
+			// convert statements to lines
 			lines := make([]Line, len(gFunction.Statements))
 			for i, s := range gFunction.Statements {
-				lines[i] = Line{Number: s.Start, Hits: s.Reached}
-				class.Lines = append(class.Lines, lines[i])
+				lineno := tokenFile.Line(tokenFile.Pos(s.Start))
+				line := Line{Number: lineno, Hits: s.Reached}
+				lines[i] = line
+				class.Lines = append(class.Lines, line)
 			}
 
 			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines})
