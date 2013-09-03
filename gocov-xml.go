@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -54,8 +55,12 @@ type Line struct {
 }
 
 func main() {
+	convert(os.Stdin, os.Stdout)
+}
+
+func convert(in io.Reader, out io.Writer) {
 	var r struct{ Packages []gocov.Package }
-	err := json.NewDecoder(os.Stdin).Decode(&r)
+	err := json.NewDecoder(in).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
@@ -131,15 +136,15 @@ func main() {
 
 	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
-	fmt.Printf(xml.Header)
-	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
+	fmt.Fprintf(out, xml.Header)
+	fmt.Fprintf(out, "<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
 
-	encoder := xml.NewEncoder(os.Stdout)
+	encoder := xml.NewEncoder(out)
 	encoder.Indent("", "\t")
 	err = encoder.Encode(coverage)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println()
+	fmt.Fprintln(out)
 }
