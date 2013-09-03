@@ -76,7 +76,7 @@ func main() {
 				files[gFunction.File] = classes
 			}
 
-			s := strings.Split("-."+gFunction.Name, ".")
+			s := strings.Split("-."+gFunction.Name, ".") // className is "-" for package-level functions
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
