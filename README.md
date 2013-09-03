@@ -1,8 +1,6 @@
 gocov XML (Cobertura) export
 ============================
 
-__Work in progress. Not useful yet.__
-
 This is a simple helper tool for generating XML output in [Cobertura](http://cobertura.sourceforge.net/) format
 for CIs like [Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Cobertura+Plugin) and others
 from [axw/gocov](https://github.com/axw/gocov) output.
@@ -21,3 +19,9 @@ Usage
 `gocov-xml` reads from the standard input:
 
     $ gocov test net/http | gocov-xml > coverage.xml
+
+Authors
+-------
+
+* [Alexey Palazhchenko (AlekSi)](https://github.com/AlekSi)
+* [Yukinari Toyota (t-yuki)](https://github.com/t-yuki)
