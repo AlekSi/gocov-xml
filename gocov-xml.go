@@ -54,12 +54,8 @@ type Line struct {
 }
 
 func main() {
-	data, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		panic(err)
-	}
 	var r struct{ Packages []gocov.Package }
-	err = json.Unmarshal(data, &r)
+	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
@@ -135,11 +131,15 @@ func main() {
 
 	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
-	data, err = xml.MarshalIndent(coverage, "", "\t")
+	fmt.Printf(xml.Header)
+	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
+
+	encoder := xml.NewEncoder(os.Stdout)
+	encoder.Indent("", "\t")
+	err = encoder.Encode(coverage)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf(xml.Header)
-	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">")
-	fmt.Printf("%s\n", data)
+
+	fmt.Println()
 }
