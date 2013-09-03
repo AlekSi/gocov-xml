@@ -124,12 +124,10 @@ func main() {
 		}
 
 		// fill package with "classes"
-		p := Package{Name: gPackage.Name, Classes: make([]Class, 0)}
-		j := 0
+		p := Package{Name: gPackage.Name, Classes: []Class{}}
 		for _, classes := range files {
 			for _, class := range classes {
 				p.Classes = append(p.Classes, *class)
-				j++
 			}
 		}
 		packages[i] = p
