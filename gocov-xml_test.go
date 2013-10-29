@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"go/build"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,17 +27,17 @@ func TestConvertEmpty(t *testing.T) {
 	dec.Decode(&v)
 
 	if v.XMLName.Local != "coverage" {
-		t.Fail()
+		t.Error()
 	}
 	if v.Packages != nil {
-		t.FailNow()
+		t.Fatal()
 	}
 }
 
 func TestConvertFunc1(t *testing.T) {
 	tmpl, err := template.ParseFiles("testdata/func1_test.json")
 	if err != nil {
-		t.FailNow()
+		t.Fatal("Can't parse testdata.")
 	}
 	dirInfo := dirInfo{}
 	dirInfo.PkgPath = reflect.TypeOf(Coverage{}).PkgPath()
@@ -50,81 +51,91 @@ func TestConvertFunc1(t *testing.T) {
 	go func() {
 		err := tmpl.Execute(pipe1wr, dirInfo)
 		if err != nil {
-			t.Fail()
+			t.Error("Can't execute template.")
 			panic("tmpl.Execute failed")
 		}
 	}()
 
 	pipe2rd, pipe2wr := io.Pipe()
-	go convert(pipe1rd, pipe2wr)
+
+	var convwr io.Writer = pipe2wr
+	testwr, err := os.Create("testdata/func1_test.xml")
+	if err == nil {
+		convwr = io.MultiWriter(convwr, testwr)
+	} else {
+		t.Log("Can't open output testdata. ignoring...")
+	}
+
+	go convert(pipe1rd, convwr)
 
 	v := Coverage{}
 	dec := xml.NewDecoder(pipe2rd)
 	dec.Decode(&v)
 
 	if v.XMLName.Local != "coverage" {
-		t.Fail()
+		t.Error()
 	}
+
 	if v.Packages == nil || len(v.Packages) != 1 {
-		t.FailNow()
+		t.Fatal()
 	}
 
 	p := v.Packages[0]
 	if p.Name != dirInfo.PkgPath+"/testdata" {
-		t.Fail()
+		t.Fatal()
 	}
 	if p.Classes == nil || len(p.Classes) != 1 {
-		t.FailNow()
+		t.Error()
 	}
 
 	c := p.Classes[0]
 	if c.Name != "-" {
-		t.Fail()
+		t.Error()
 	}
 	if c.Filename != dirInfo.DirPath+"/testdata/func1.go" {
-		t.Fail()
+		t.Error()
 	}
 	if c.Methods == nil || len(c.Methods) != 1 {
-		t.FailNow()
+		t.Error()
 	}
 	if c.Lines == nil || len(c.Lines) != 2 {
-		t.FailNow()
+		t.Error()
 	}
 
 	m := c.Methods[0]
 	if m.Name != "Func1" {
-		t.Fail()
+		t.Error()
 	}
 	if m.Lines == nil || len(m.Lines) != 2 {
-		t.FailNow()
+		t.Fatal()
 	}
 
 	l1 := m.Lines[0]
 	if l1.Number != 5 {
-		t.Fail()
+		t.Error()
 	}
 	if l1.Hits != 1 {
-		t.Fail()
+		t.Error()
 	}
 
 	l2 := m.Lines[1]
 	if l2.Number != 6 {
-		t.Fail()
+		t.Error()
 	}
 	if l2.Hits != 0 {
-		t.Fail()
+		t.Error()
 	}
 
 	l1 = c.Lines[0]
 	if l1.Number != 5 {
-		t.Fail()
+		t.Error()
 	}
 	if l1.Hits != 1 {
-		t.Fail()
+		t.Error()
 	}
 
 	l2 = c.Lines[1]
 	if l2.Number != 6 {
-		t.Fail()
+		t.Error()
 	}
 }
