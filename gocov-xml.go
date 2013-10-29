@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"go/build"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -19,7 +21,12 @@ type Coverage struct {
 	BranchRate float32   `xml:"branch-rate,attr"`
 	Version    string    `xml:"version,attr"`
 	Timestamp  int64     `xml:"timestamp,attr"`
+	Sources    []Source  `xml:"sources>source"`
 	Packages   []Package `xml:"packages>package"`
+}
+
+type Source struct {
+	Path string `xml:",chardata"`
 }
 
 type Package struct {
@@ -54,14 +61,24 @@ type Line struct {
 }
 
 func main() {
+	convert(os.Stdin, os.Stdout)
+}
+
+func convert(in io.Reader, out io.Writer) {
 	var r struct{ Packages []gocov.Package }
-	err := json.NewDecoder(os.Stdin).Decode(&r)
+	err := json.NewDecoder(in).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
 
 	fset := token.NewFileSet()
 	tokenFiles := make(map[string]*token.File)
+
+	srcDirs := build.Default.SrcDirs()
+	sources := make([]Source, len(srcDirs))
+	for i, dir := range srcDirs {
+		sources[i] = Source{dir}
+	}
 
 	// convert packages
 	packages := make([]Package, len(r.Packages))
@@ -80,7 +97,8 @@ func main() {
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
+				fileName := stripKnownSources(sources, gFunction.File)
+				class = &Class{Name: className, Filename: fileName, Methods: []Method{}, Lines: []Line{}}
 				classes[className] = class
 			}
 
@@ -129,17 +147,28 @@ func main() {
 		packages[i] = p
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
+	coverage := Coverage{Sources: sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
-	fmt.Printf(xml.Header)
-	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
+	fmt.Fprintf(out, xml.Header)
+	fmt.Fprintf(out, "<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
 
-	encoder := xml.NewEncoder(os.Stdout)
+	encoder := xml.NewEncoder(out)
 	encoder.Indent("", "\t")
 	err = encoder.Encode(coverage)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println()
+	fmt.Fprintln(out)
+}
+
+func stripKnownSources(sources []Source, fileName string) string {
+	for _, source := range sources {
+		prefix := source.Path
+		prefix = strings.TrimSuffix(prefix, string(os.PathSeparator)) + string(os.PathSeparator)
+		if strings.HasPrefix(fileName, prefix) {
+			return strings.TrimPrefix(fileName, prefix)
+		}
+	}
+	return fileName
 }

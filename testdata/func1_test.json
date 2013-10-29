@@ -1,0 +1,29 @@
+{
+  "Packages": [
+    {
+      "Functions": [
+        {
+          "Left": 0,
+          "Entered": 0,
+          "Statements": [
+            {
+              "Reached": 1,
+              "End": 92,
+              "Start": 62
+            },
+            {
+              "Reached": 0,
+              "End": 89,
+              "Start": 80
+            }
+          ],
+          "End": 94,
+          "Start": 37,
+          "File": "{{.DirPath}}/testdata/func1.go",
+          "Name": "Func1"
+        }
+      ],
+      "Name": "{{.PkgPath}}/testdata"
+    }
+  ]
+}
