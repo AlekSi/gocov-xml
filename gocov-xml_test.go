@@ -29,6 +29,9 @@ func TestConvertEmpty(t *testing.T) {
 	if v.XMLName.Local != "coverage" {
 		t.Error()
 	}
+	if v.Sources == nil {
+		t.Fatal()
+	}
 	if v.Packages != nil {
 		t.Fatal()
 	}
@@ -76,6 +79,10 @@ func TestConvertFunc1(t *testing.T) {
 		t.Error()
 	}
 
+	if v.Sources == nil {
+		t.Fatal()
+	}
+
 	if v.Packages == nil || len(v.Packages) != 1 {
 		t.Fatal()
 	}
@@ -92,8 +99,8 @@ func TestConvertFunc1(t *testing.T) {
 	if c.Name != "-" {
 		t.Error()
 	}
-	if c.Filename != dirInfo.DirPath+"/testdata/func1.go" {
-		t.Error()
+	if c.Filename != dirInfo.PkgPath+"/testdata/func1.go" {
+		t.Errorf("Expected %s but %s", dirInfo.PkgPath+"/testdata/func1.go", c.Filename)
 	}
 	if c.Methods == nil || len(c.Methods) != 1 {
 		t.Error()

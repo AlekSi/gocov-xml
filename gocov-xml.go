@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"go/build"
 	"go/token"
 	"io"
 	"io/ioutil"
@@ -20,7 +21,12 @@ type Coverage struct {
 	BranchRate float32   `xml:"branch-rate,attr"`
 	Version    string    `xml:"version,attr"`
 	Timestamp  int64     `xml:"timestamp,attr"`
+	Sources    []Source  `xml:"sources>source"`
 	Packages   []Package `xml:"packages>package"`
+}
+
+type Source struct {
+	Path string `xml:",chardata"`
 }
 
 type Package struct {
@@ -68,6 +74,12 @@ func convert(in io.Reader, out io.Writer) {
 	fset := token.NewFileSet()
 	tokenFiles := make(map[string]*token.File)
 
+	srcDirs := build.Default.SrcDirs()
+	sources := make([]Source, len(srcDirs))
+	for i, dir := range srcDirs {
+		sources[i] = Source{dir}
+	}
+
 	// convert packages
 	packages := make([]Package, len(r.Packages))
 	for i, gPackage := range r.Packages {
@@ -85,7 +97,8 @@ func convert(in io.Reader, out io.Writer) {
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
+				fileName := stripKnownSources(sources, gFunction.File)
+				class = &Class{Name: className, Filename: fileName, Methods: []Method{}, Lines: []Line{}}
 				classes[className] = class
 			}
 
@@ -134,7 +147,7 @@ func convert(in io.Reader, out io.Writer) {
 		packages[i] = p
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
+	coverage := Coverage{Sources: sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
 	fmt.Fprintf(out, xml.Header)
 	fmt.Fprintf(out, "<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
@@ -147,4 +160,15 @@ func convert(in io.Reader, out io.Writer) {
 	}
 
 	fmt.Fprintln(out)
+}
+
+func stripKnownSources(sources []Source, fileName string) string {
+	for _, source := range sources {
+		prefix := source.Path
+		prefix = strings.TrimSuffix(prefix, string(os.PathSeparator)) + string(os.PathSeparator)
+		if strings.HasPrefix(fileName, prefix) {
+			return strings.TrimPrefix(fileName, prefix)
+		}
+	}
+	return fileName
 }
