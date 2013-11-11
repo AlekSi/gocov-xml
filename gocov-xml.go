@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"github.com/axw/gocov"
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
-	"path/filepath"
-	"github.com/axw/gocov"
 )
 
 type Coverage struct {
@@ -56,25 +56,25 @@ type Line struct {
 
 func main() {
 	// check the arguments.
-	bpath:="/"
-	if len(os.Args)>2{
-		if os.Args[1]=="-b"{
-			bpath=os.Args[2]
-		}else{
+	bpath := "/"
+	if len(os.Args) > 2 {
+		if os.Args[1] == "-b" {
+			bpath = os.Args[2]
+		} else {
 			panic("invalid arguments")
 		}
-	}else if len(os.Args)>1 {
-		if os.Args[1]=="-pwd"{
-			bpath,_=os.Getwd()
-		}else{
+	} else if len(os.Args) > 1 {
+		if os.Args[1] == "-pwd" {
+			bpath, _ = os.Getwd()
+		} else {
 			panic("invalid arguments")
 		}
 	}
-	if !filepath.IsAbs(bpath){
-		panic(fmt.Sprintf("base path is abstruct path:%s",bpath))
+	if !filepath.IsAbs(bpath) {
+		panic(fmt.Sprintf("base path is abstruct path:%s", bpath))
 	}
-	sources:=make([]string,1)
-	sources[0]=bpath
+	sources := make([]string, 1)
+	sources[0] = bpath
 	//
 	var r struct{ Packages []gocov.Package }
 	err := json.NewDecoder(os.Stdin).Decode(&r)
@@ -92,7 +92,7 @@ func main() {
 		files := make(map[string]map[string]*Class)
 		for _, gFunction := range gPackage.Functions {
 			// get the releative path by base path.
-			fpath,_:=filepath.Rel(bpath,gFunction.File)
+			fpath, _ := filepath.Rel(bpath, gFunction.File)
 			classes := files[fpath]
 			if classes == nil {
 				// group functions by "class" (type) in a File
@@ -153,7 +153,7 @@ func main() {
 		packages[i] = p
 	}
 
-	coverage := Coverage{Sources:sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
+	coverage := Coverage{Sources: sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
