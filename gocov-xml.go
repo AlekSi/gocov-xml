@@ -33,6 +33,8 @@ type Package struct {
 	BranchRate float32 `xml:"branch-rate,attr"`
 	Complexity float32 `xml:"complexity,attr"`
 	Classes    []Class `xml:"classes>class"`
+	LineCount  int64   `xml:"line-count,attr"`
+	LineHits   int64   `xml:"line-hits,attr"`
 }
 
 type Class struct {
@@ -43,6 +45,8 @@ type Class struct {
 	Complexity float32  `xml:"complexity,attr"`
 	Methods    []Method `xml:"methods>method"`
 	Lines      []Line   `xml:"lines>line"`
+	LineCount  int64   `xml:"line-count,attr"`
+	LineHits   int64   `xml:"line-hits,attr"`
 }
 
 type Method struct {
@@ -52,6 +56,8 @@ type Method struct {
 	BranchRate float32 `xml:"branch-rate,attr"`
 	Complexity float32 `xml:"complexity,attr"`
 	Lines      []Line  `xml:"lines>line"`
+	LineCount  int64   `xml:"line-count,attr"`
+	LineHits   int64   `xml:"line-hits,attr"`
 }
 
 type Line struct {
@@ -61,6 +67,7 @@ type Line struct {
 
 func main() {
 	var r struct{ Packages []gocov.Package }
+    var total_lines, total_hits int64 = 0, 0
 	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
 		panic(err)
@@ -86,7 +93,7 @@ func main() {
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
+				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}, LineCount: 0, LineHits: 0}
 				classes[className] = class
 			}
 
@@ -115,27 +122,38 @@ func main() {
 
 			// convert statements to lines
 			lines := make([]Line, len(gFunction.Statements))
+            func_hits := 0
 			for i, s := range gFunction.Statements {
 				lineno := tokenFile.Line(tokenFile.Pos(s.Start))
 				line := Line{Number: lineno, Hits: s.Reached}
+                func_hits += int(s.Reached)
 				lines[i] = line
 				class.Lines = append(class.Lines, line)
 			}
+            line_rate := float32(func_hits) / float32(len(gFunction.Statements))
 
-			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines})
+			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines, LineRate: line_rate})
+            class.LineCount += int64(len(gFunction.Statements))
+            class.LineHits += int64(func_hits)
 		}
 
 		// fill package with "classes"
-		p := Package{Name: gPackage.Name, Classes: []Class{}}
+		p := Package{Name: gPackage.Name, Classes: []Class{}, LineCount: 0, LineHits: 0}
 		for _, classes := range files {
 			for _, class := range classes {
+                p.LineCount += class.LineCount
+                p.LineHits += class.LineHits
+                class.LineRate = float32(class.LineHits) / float32(class.LineCount) 
 				p.Classes = append(p.Classes, *class)
 			}
+            p.LineRate = float32(p.LineHits) / float32(p.LineCount) 
+            total_lines += p.LineCount
+            total_hits += p.LineHits
 		}
 		packages[i] = p
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
+	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LineRate: float32(total_hits) / float32(total_lines)}
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n")
