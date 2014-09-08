@@ -1,6 +1,10 @@
 gocov XML (Cobertura) export
 ============================
 
+This is a fork of original gocov-xml (github.com/AlekSi/gocov-xml) tool, adding LineRate calculation.
+BranchRate is not available since this data is not available by go cover.
+
+
 This is a simple helper tool for generating XML output in [Cobertura](http://cobertura.sourceforge.net/) format
 for CIs like [Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Cobertura+Plugin) and others
 from [github.com/axw/gocov](https://github.com/axw/gocov) output.
@@ -11,7 +15,7 @@ Installation
 Just type the following to install the program and its dependencies:
 
     $ go get github.com/axw/gocov/...
-    $ go get github.com/AlekSi/gocov-xml
+    $ go get github.com/marinbek/gocov-xml
 
 Usage
 -----
