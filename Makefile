@@ -1,12 +1,11 @@
-all: fvb
+all: test
 
 prepare:
 	go get -u github.com/axw/gocov/...
-	go get -u github.com/gorilla/mux/...
-	gocov test -v github.com/gorilla/mux > mux.json
+	go install -v ./...
 
-fvb:
-	gofmt -e -s -w .
-	go vet .
-	go run ./gocov-xml.go < mux.json > coverage.xml
-	xmllint --valid --noout coverage.xml
+test:
+	gocov test -v github.com/AlekSi/gocov-xml/internal/package1 > package1.json
+	gocov-xml < package1.json > package1.xml
+	xmllint --valid --noout package1.xml
+	go test ./...
