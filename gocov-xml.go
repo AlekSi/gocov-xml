@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -19,10 +20,13 @@ func main() {
 	var r struct{ Packages []gocov.Package }
 	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	packages := gocov_xml.ConvertGocov(r.Packages)
+	packages, err := gocov_xml.ConvertGocov(r.Packages)
+	if err != nil {
+		log.Fatal(err)
+	}
 	coverage := gocov_xml.Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
 	fmt.Printf(xml.Header)
@@ -32,7 +36,7 @@ func main() {
 	encoder.Indent("", "\t")
 	err = encoder.Encode(coverage)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	fmt.Println()

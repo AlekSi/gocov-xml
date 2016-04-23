@@ -10,8 +10,8 @@ import (
 	"github.com/axw/gocov"
 )
 
-// ConvertGocov takes a slice of gocov packages and converts them to a slice go gocov-xml ones.
-func ConvertGocov(packages []gocov.Package) []Package {
+// ConvertGocov takes a slice of gocov packages and converts them to a slice of gocov-xml ones.
+func ConvertGocov(packages []gocov.Package) ([]Package, error) {
 	fset := token.NewFileSet()
 	tokenFiles := make(map[string]*token.File)
 
@@ -44,7 +44,7 @@ func ConvertGocov(packages []gocov.Package) []Package {
 			if tokenFile == nil {
 				info, err := os.Stat(gFunction.File)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				tokenFile = fset.AddFile(gFunction.File, fset.Base(), int(info.Size()))
 				setContent = true
@@ -52,7 +52,7 @@ func ConvertGocov(packages []gocov.Package) []Package {
 
 			tokenData, err := ioutil.ReadFile(gFunction.File)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			if setContent {
 				// This processes the content and records line number info.
@@ -84,5 +84,5 @@ func ConvertGocov(packages []gocov.Package) []Package {
 		res[i] = p
 	}
 
-	return res
+	return res, nil
 }
