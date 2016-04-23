@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var rootPath string
@@ -21,20 +23,11 @@ func init() {
 
 func TestPackage1(t *testing.T) {
 	actual, err := ioutil.ReadFile(filepath.Join(rootPath, "package1.xml"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	actual = bytes.Replace(actual, []byte(rootPath), nil, -1)
 	actual = regexp.MustCompile(`timestamp="\d+"`).ReplaceAll(actual, []byte(`timestamp="123456789"`))
-	t.Logf("actual:\n%s", actual)
 
 	expected, err := ioutil.ReadFile("expected_package1.xml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("expected:\n%s", expected)
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Error("expected != actual")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, string(expected), string(actual))
 }
