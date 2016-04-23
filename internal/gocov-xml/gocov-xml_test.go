@@ -29,5 +29,5 @@ func TestPackage1(t *testing.T) {
 
 	expected, err := ioutil.ReadFile("expected_package1.xml")
 	require.NoError(t, err)
-	assert.Equal(t, string(expected), string(actual))
+	assert.Equal(t, expected, actual)
 }
