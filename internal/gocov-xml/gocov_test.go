@@ -21,8 +21,8 @@ func init() {
 	}
 }
 
-func TestPackage1(t *testing.T) {
-	actual, err := ioutil.ReadFile(filepath.Join(rootPath, "package1.xml"))
+func TestConvertGocov(t *testing.T) {
+	actual, err := ioutil.ReadFile(filepath.Join(rootPath, "package1.gocov.xml"))
 	require.NoError(t, err)
 	actual = bytes.Replace(actual, []byte(rootPath), nil, -1)
 	actual = regexp.MustCompile(`timestamp="\d+"`).ReplaceAll(actual, []byte(`timestamp="123456789"`))

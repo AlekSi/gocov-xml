@@ -1,3 +1,4 @@
-*.json
+.vscode/
 *.war
-package1.xml
+package1.*.json
+package1.*.xml
