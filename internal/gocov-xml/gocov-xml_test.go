@@ -22,12 +22,14 @@ func init() {
 }
 
 func TestConvertGocov(t *testing.T) {
-	actual, err := ioutil.ReadFile(filepath.Join(rootPath, "package1.gocov.xml"))
-	require.NoError(t, err)
-	actual = bytes.Replace(actual, []byte(rootPath), nil, -1)
-	actual = regexp.MustCompile(`timestamp="\d+"`).ReplaceAll(actual, []byte(`timestamp="123456789"`))
+	for _, f := range []string{"package1", "package12"} {
+		actual, err := ioutil.ReadFile(filepath.Join(rootPath, f+".gocov.xml"))
+		require.NoError(t, err)
+		actual = bytes.Replace(actual, []byte(rootPath), nil, -1)
+		actual = regexp.MustCompile(`timestamp="\d+"`).ReplaceAll(actual, []byte(`timestamp="123456789"`))
 
-	expected, err := ioutil.ReadFile("expected_package1.xml")
-	require.NoError(t, err)
-	assert.Equal(t, expected, actual)
+		expected, err := ioutil.ReadFile("expected_" + f + ".xml")
+		require.NoError(t, err)
+		assert.Equal(t, expected, actual)
+	}
 }
