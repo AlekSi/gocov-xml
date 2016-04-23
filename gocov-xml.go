@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"go/token"
 	"io/ioutil"
@@ -11,49 +12,13 @@ import (
 	"time"
 
 	"github.com/axw/gocov"
+
+	"github.com/AlekSi/gocov-xml/internal/gocov-xml"
 )
 
-type Coverage struct {
-	XMLName    xml.Name  `xml:"coverage"`
-	LineRate   float32   `xml:"line-rate,attr"`
-	BranchRate float32   `xml:"branch-rate,attr"`
-	Version    string    `xml:"version,attr"`
-	Timestamp  int64     `xml:"timestamp,attr"`
-	Packages   []Package `xml:"packages>package"`
-}
-
-type Package struct {
-	Name       string  `xml:"name,attr"`
-	LineRate   float32 `xml:"line-rate,attr"`
-	BranchRate float32 `xml:"branch-rate,attr"`
-	Complexity float32 `xml:"complexity,attr"`
-	Classes    []Class `xml:"classes>class"`
-}
-
-type Class struct {
-	Name       string   `xml:"name,attr"`
-	Filename   string   `xml:"filename,attr"`
-	LineRate   float32  `xml:"line-rate,attr"`
-	BranchRate float32  `xml:"branch-rate,attr"`
-	Complexity float32  `xml:"complexity,attr"`
-	Methods    []Method `xml:"methods>method"`
-	Lines      []Line   `xml:"lines>line"`
-}
-
-type Method struct {
-	Name       string  `xml:"name,attr"`
-	Signature  string  `xml:"signature,attr"`
-	LineRate   float32 `xml:"line-rate,attr"`
-	BranchRate float32 `xml:"branch-rate,attr"`
-	Lines      []Line  `xml:"lines>line"`
-}
-
-type Line struct {
-	Number int   `xml:"number,attr"`
-	Hits   int64 `xml:"hits,attr"`
-}
-
 func main() {
+	flag.Parse()
+
 	var r struct{ Packages []gocov.Package }
 	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
@@ -64,15 +29,15 @@ func main() {
 	tokenFiles := make(map[string]*token.File)
 
 	// convert packages
-	packages := make([]Package, len(r.Packages))
+	packages := make([]gocov_xml.Package, len(r.Packages))
 	for i, gPackage := range r.Packages {
 		// group functions by filename and "class" (type)
-		files := make(map[string]map[string]*Class)
+		files := make(map[string]map[string]*gocov_xml.Class)
 		for _, gFunction := range gPackage.Functions {
 			classes := files[gFunction.File]
 			if classes == nil {
 				// group functions by "class" (type) in a File
-				classes = make(map[string]*Class)
+				classes = make(map[string]*gocov_xml.Class)
 				files[gFunction.File] = classes
 			}
 
@@ -80,7 +45,7 @@ func main() {
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
+				class = &gocov_xml.Class{Name: className, Filename: gFunction.File, Methods: []gocov_xml.Method{}, Lines: []gocov_xml.Line{}}
 				classes[className] = class
 			}
 
@@ -108,19 +73,19 @@ func main() {
 			}
 
 			// convert statements to lines
-			lines := make([]Line, len(gFunction.Statements))
+			lines := make([]gocov_xml.Line, len(gFunction.Statements))
 			for i, s := range gFunction.Statements {
 				lineno := tokenFile.Line(tokenFile.Pos(s.Start))
-				line := Line{Number: lineno, Hits: s.Reached}
+				line := gocov_xml.Line{Number: lineno, Hits: s.Reached}
 				lines[i] = line
 				class.Lines = append(class.Lines, line)
 			}
 
-			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines})
+			class.Methods = append(class.Methods, gocov_xml.Method{Name: methodName, Lines: lines})
 		}
 
 		// fill package with "classes"
-		p := Package{Name: gPackage.Name, Classes: []Class{}}
+		p := gocov_xml.Package{Name: gPackage.Name, Classes: []gocov_xml.Class{}}
 		for _, classes := range files {
 			for _, class := range classes {
 				p.Classes = append(p.Classes, *class)
@@ -129,7 +94,7 @@ func main() {
 		packages[i] = p
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
+	coverage := gocov_xml.Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
