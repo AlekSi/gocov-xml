@@ -14,12 +14,17 @@ import (
 )
 
 type Coverage struct {
-	XMLName    xml.Name  `xml:"coverage"`
-	LineRate   float32   `xml:"line-rate,attr"`
-	BranchRate float32   `xml:"branch-rate,attr"`
-	Version    string    `xml:"version,attr"`
-	Timestamp  int64     `xml:"timestamp,attr"`
-	Packages   []Package `xml:"packages>package"`
+	XMLName         xml.Name  `xml:"coverage"`
+	LineRate        float32   `xml:"line-rate,attr"`
+	BranchRate      float32   `xml:"branch-rate,attr"`
+	LinesCovered    float32 		`xml:"lines-covered,attr"`
+	LinesValid      int64 		`xml:"lines-valid,attr"`
+	BranchesCovered int64 		`xml:"branches-covered,attr"`
+	BranchesValid   int64 		`xml:"branches-valid,attr"`
+	Complexity      float32 		`xml:"complexity,attr"`
+	Version         string    `xml:"version,attr"`
+	Timestamp       int64     `xml:"timestamp,attr"`
+	Packages        []Package `xml:"packages>package"`
 }
 
 type Package struct {
@@ -45,6 +50,7 @@ type Method struct {
 	Signature  string  `xml:"signature,attr"`
 	LineRate   float32 `xml:"line-rate,attr"`
 	BranchRate float32 `xml:"branch-rate,attr"`
+	Complexity float32 `xml:"complexity,attr"`
 	Lines      []Line  `xml:"lines>line"`
 }
 
@@ -132,7 +138,7 @@ func main() {
 	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond)}
 
 	fmt.Printf(xml.Header)
-	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-03.dtd\">\n")
+	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n")
 
 	encoder := xml.NewEncoder(os.Stdout)
 	encoder.Indent("", "\t")
