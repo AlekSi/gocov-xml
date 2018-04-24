@@ -67,7 +67,8 @@ type Line struct {
 
 func main() {
 	var r struct{ Packages []gocov.Package }
-	var total_lines, total_hits int64 = 0, 0
+	var totalLines, totalHits int64
+//	var total_lines, total_hits int64 = 0, 0
 	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
 		panic(err)
@@ -122,21 +123,22 @@ func main() {
 
 			// convert statements to lines
 			lines := make([]Line, len(gFunction.Statements))
-			func_hits := 0
+			var funcHits int
+			//func_hits := 0
 			for i, s := range gFunction.Statements {
 				lineno := tokenFile.Line(tokenFile.Pos(s.Start))
 				line := Line{Number: lineno, Hits: s.Reached}
 				if int(s.Reached) > 0 {
-					func_hits += 1
+					funcHits += 1
 				}
 				lines[i] = line
 				class.Lines = append(class.Lines, line)
 			}
-			line_rate := float32(func_hits) / float32(len(gFunction.Statements))
+			lineRate := float32(funcHits) / float32(len(gFunction.Statements))
 
-			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines, LineRate: line_rate})
+			class.Methods = append(class.Methods, Method{Name: methodName, Lines: lines, LineRate: lineRate})
 			class.LineCount += int64(len(gFunction.Statements))
-			class.LineHits += int64(func_hits)
+			class.LineHits += int64(funcHits)
 		}
 
 		// fill package with "classes"
@@ -151,11 +153,11 @@ func main() {
 			p.LineRate = float32(p.LineHits) / float32(p.LineCount)
 		}
 		packages[i] = p
-		total_lines += p.LineCount
-		total_hits += p.LineHits
+		totalLines += p.LineCount
+		totalHits += p.LineHits
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LinesCovered: float32(total_hits), LinesValid: int64(total_lines), LineRate: float32(total_hits) / float32(total_lines)}
+	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LinesCovered: float32(totalHits), LinesValid: int64(totalLines), LineRate: float32(totalHits) / float32(totalLines)}
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n")
