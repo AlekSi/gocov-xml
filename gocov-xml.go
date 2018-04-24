@@ -93,7 +93,7 @@ func main() {
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}, LineCount: 0, LineHits: 0}
+				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
 				classes[className] = class
 			}
 
@@ -140,7 +140,7 @@ func main() {
 		}
 
 		// fill package with "classes"
-		p := Package{Name: gPackage.Name, Classes: []Class{}, LineCount: 0, LineHits: 0}
+		p := Package{Name: gPackage.Name, Classes: []Class{}}
 		for _, classes := range files {
 			for _, class := range classes {
 				p.LineCount += class.LineCount
