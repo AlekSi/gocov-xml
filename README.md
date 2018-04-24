@@ -5,7 +5,6 @@ This is a simple helper tool for generating XML output in [Cobertura](http://cob
 for CIs like [Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Cobertura+Plugin) and others
 from [github.com/axw/gocov](https://github.com/axw/gocov) output.
 
-
 Installation
 ------------
 
