@@ -1,9 +1,10 @@
 gocov XML (Cobertura) export
 ============================
 
-This is a simple helper tool for generating XML output in [Cobertura](http://cobertura.sourceforge.net/) [coverage-04.dtd](http://cobertura.sourceforge.net/xml/coverage-04.dtd) format
+This is a simple helper tool for generating XML output in [Cobertura](http://cobertura.sourceforge.net/) format
 for CIs like [Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Cobertura+Plugin), [vsts](https://www.visualstudio.com/team-services) and others
 from [github.com/axw/gocov](https://github.com/axw/gocov) output.
+The generated XML output is in the latest [coverage-04.dtd](http://cobertura.sourceforge.net/xml/coverage-04.dtd) schema
 
 Installation
 ------------
