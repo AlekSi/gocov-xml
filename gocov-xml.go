@@ -68,7 +68,6 @@ type Line struct {
 func main() {
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
-	//	var total_lines, total_hits int64 = 0, 0
 	err := json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
 		panic(err)
@@ -124,7 +123,6 @@ func main() {
 			// convert statements to lines
 			lines := make([]Line, len(gFunction.Statements))
 			var funcHits int
-			//func_hits := 0
 			for i, s := range gFunction.Statements {
 				lineno := tokenFile.Line(tokenFile.Pos(s.Start))
 				line := Line{Number: lineno, Hits: s.Reached}
