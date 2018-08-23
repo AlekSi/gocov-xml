@@ -21,6 +21,15 @@ Usage
 
     $ gocov test github.com/gorilla/mux | gocov-xml > coverage.xml
 
+Continuous Code Coverage via [Codecov](https://codecov.io)
+----------------------------------------------------------
+
+Submit coverage results to [Codecov](https://codecov.io) for static analysis and continuous code coverage.
+
+    $ gocov test github.com/gorilla/mux | gocov-xml > coverage.xml
+    $ bash <(curl -s https://codecov.io/bash)
+
+
 Authors
 -------
 
