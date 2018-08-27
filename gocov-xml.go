@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"github.com/axw/gocov"
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/axw/gocov"
 )
 
 type Coverage struct {
@@ -25,6 +25,7 @@ type Coverage struct {
 	Version         string    `xml:"version,attr"`
 	Timestamp       int64     `xml:"timestamp,attr"`
 	Packages        []Package `xml:"packages>package"`
+	Sources         []string  `xml:"sources>source"`
 }
 
 type Package struct {
@@ -66,6 +67,27 @@ type Line struct {
 }
 
 func main() {
+	// check the arguments.
+	bpath := "/"
+	if len(os.Args) > 2 {
+		if os.Args[1] == "-b" {
+			bpath = os.Args[2]
+		} else {
+			panic("invalid arguments")
+		}
+	} else if len(os.Args) > 1 {
+		if os.Args[1] == "-pwd" {
+			bpath, _ = os.Getwd()
+		} else {
+			panic("invalid arguments")
+		}
+	}
+	if !filepath.IsAbs(bpath) {
+		panic(fmt.Sprintf("base path is abstruct path:%s", bpath))
+	}
+	sources := make([]string, 1)
+	sources[0] = bpath
+	//
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
 	err := json.NewDecoder(os.Stdin).Decode(&r)
@@ -82,18 +104,20 @@ func main() {
 		// group functions by filename and "class" (type)
 		files := make(map[string]map[string]*Class)
 		for _, gFunction := range gPackage.Functions {
-			classes := files[gFunction.File]
+			// get the releative path by base path.
+			fpath, _ := filepath.Rel(bpath, gFunction.File)
+			classes := files[fpath]
 			if classes == nil {
 				// group functions by "class" (type) in a File
 				classes = make(map[string]*Class)
-				files[gFunction.File] = classes
+				files[fpath] = classes
 			}
 
 			s := strings.Split("-."+gFunction.Name, ".") // className is "-" for package-level functions
 			className, methodName := s[len(s)-2], s[len(s)-1]
 			class := classes[className]
 			if class == nil {
-				class = &Class{Name: className, Filename: gFunction.File, Methods: []Method{}, Lines: []Line{}}
+				class = &Class{Name: className, Filename: fpath, Methods: []Method{}, Lines: []Line{}}
 				classes[className] = class
 			}
 
@@ -155,7 +179,7 @@ func main() {
 		totalHits += p.LineHits
 	}
 
-	coverage := Coverage{Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LinesCovered: float32(totalHits), LinesValid: int64(totalLines), LineRate: float32(totalHits) / float32(totalLines)}
+	coverage := Coverage{Sources: sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LinesCovered: float32(totalHits), LinesValid: int64(totalLines), LineRate: float32(totalHits) / float32(totalLines)}
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n")
