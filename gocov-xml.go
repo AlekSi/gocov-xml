@@ -68,23 +68,18 @@ type Line struct {
 
 func main() {
 	// check the arguments.
-	bpath := "/"
+	bpath, _ := os.Getwd()
 	if len(os.Args) > 2 {
 		if os.Args[1] == "-b" {
 			bpath = os.Args[2]
-		} else {
-			panic("invalid arguments")
-		}
-	} else if len(os.Args) > 1 {
-		if os.Args[1] == "-pwd" {
-			bpath, _ = os.Getwd()
+			if !filepath.IsAbs(bpath) {
+				panic(fmt.Sprintf("base path is a relative path: %s", bpath))
+			}
 		} else {
 			panic("invalid arguments")
 		}
 	}
-	if !filepath.IsAbs(bpath) {
-		panic(fmt.Sprintf("base path is abstruct path:%s", bpath))
-	}
+
 	sources := make([]string, 1)
 	sources[0] = bpath
 	//

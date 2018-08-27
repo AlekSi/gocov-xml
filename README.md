@@ -18,8 +18,7 @@ Just type the following to install the program and its dependencies:
 Args
 -----
 
-- `-pwd` using current path as base path.
-- `-b /base/path` specified base path
+- `-b /base/path` specified base path instead of the current working directory
 
 
 Usage
@@ -28,7 +27,6 @@ Usage
 `gocov-xml` reads from the standard input:
 
     $ gocov test github.com/gorilla/mux | gocov-xml > coverage.xml
-    $ gocov test github.com/gorilla/mux | gocov-xml -pwd > coverage.xml
     $ gocov test github.com/gorilla/mux | gocov-xml -b /base/path > coverage.xml
 
 
