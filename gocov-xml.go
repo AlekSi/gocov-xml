@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/axw/gocov"
 	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/axw/gocov"
 )
 
+// Coverage information
 type Coverage struct {
 	XMLName         xml.Name  `xml:"coverage"`
 	LineRate        float32   `xml:"line-rate,attr"`
@@ -28,6 +30,7 @@ type Coverage struct {
 	Sources         []string  `xml:"sources>source"`
 }
 
+// Package information
 type Package struct {
 	Name       string  `xml:"name,attr"`
 	LineRate   float32 `xml:"line-rate,attr"`
@@ -38,6 +41,7 @@ type Package struct {
 	LineHits   int64   `xml:"line-hits,attr"`
 }
 
+// Class information
 type Class struct {
 	Name       string   `xml:"name,attr"`
 	Filename   string   `xml:"filename,attr"`
@@ -50,6 +54,7 @@ type Class struct {
 	LineHits   int64    `xml:"line-hits,attr"`
 }
 
+// Method information
 type Method struct {
 	Name       string  `xml:"name,attr"`
 	Signature  string  `xml:"signature,attr"`
@@ -61,6 +66,7 @@ type Method struct {
 	LineHits   int64   `xml:"line-hits,attr"`
 }
 
+// Line information
 type Line struct {
 	Number int   `xml:"number,attr"`
 	Hits   int64 `xml:"hits,attr"`
@@ -68,7 +74,10 @@ type Line struct {
 
 func main() {
 	// check the arguments.
-	bpath, _ := os.Getwd()
+	bpath, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 	if len(os.Args) > 2 {
 		if os.Args[1] == "-b" {
 			bpath = os.Args[2]
@@ -82,10 +91,9 @@ func main() {
 
 	sources := make([]string, 1)
 	sources[0] = bpath
-	//
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
-	err := json.NewDecoder(os.Stdin).Decode(&r)
+	err = json.NewDecoder(os.Stdin).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +108,10 @@ func main() {
 		files := make(map[string]map[string]*Class)
 		for _, gFunction := range gPackage.Functions {
 			// get the releative path by base path.
-			fpath, _ := filepath.Rel(bpath, gFunction.File)
+			fpath, err := filepath.Rel(bpath, gFunction.File)
+			if err != nil {
+				panic(err)
+			}
 			classes := files[fpath]
 			if classes == nil {
 				// group functions by "class" (type) in a File
