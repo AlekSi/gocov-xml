@@ -18,7 +18,7 @@ Just type the following to install the program and its dependencies:
 Args
 -----
 
-- `-b /base/path` specified base path instead of the current working directory
+- `-base /base/path/to/source` specified base path instead of the current working directory
 
 
 Usage

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"go/token"
 	"io/ioutil"
@@ -73,19 +74,23 @@ type Line struct {
 }
 
 func main() {
-	// check the arguments.
-	bpath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	if len(os.Args) > 2 {
-		if os.Args[1] == "-b" {
-			bpath = os.Args[2]
-			if !filepath.IsAbs(bpath) {
-				panic(fmt.Sprintf("base path is a relative path: %s", bpath))
-			}
-		} else {
-			panic("invalid arguments")
+	basePtr := flag.String("base", "", "Base path of source.")
+
+	flag.Parse()
+
+	var bpath string
+	var err error
+
+	// Parse the commandline arguments.
+	if *basePtr != "" {
+		bpath = *basePtr
+		if !filepath.IsAbs(bpath) {
+			panic(fmt.Sprintf("base path is a relative path: %s", bpath))
+		}
+	} else {
+		bpath, err = os.Getwd()
+		if err != nil {
+			panic(err)
 		}
 	}
 
