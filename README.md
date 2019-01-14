@@ -27,7 +27,7 @@ Usage
 `gocov-xml` reads from the standard input:
 
     $ gocov test github.com/gorilla/mux | gocov-xml > coverage.xml
-    $ gocov test github.com/gorilla/mux | gocov-xml -b /base/path > coverage.xml
+    $ gocov test github.com/gorilla/mux | gocov-xml -base /base/path/to/source > coverage.xml
 
 
 Authors
