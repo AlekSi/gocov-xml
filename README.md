@@ -18,7 +18,7 @@ Just type the following to install the program and its dependencies:
 Args
 -----
 
-- `-base /base/path/to/source` specified base path instead of the current working directory
+- `-source /abs/path/to/source`. Defaults to the current working directory.
 
 
 Usage
@@ -27,7 +27,7 @@ Usage
 `gocov-xml` reads from the standard input:
 
     $ gocov test github.com/gorilla/mux | gocov-xml > coverage.xml
-    $ gocov test github.com/gorilla/mux | gocov-xml -base /base/path/to/source > coverage.xml
+    $ gocov test github.com/gorilla/mux | gocov-xml -source /abs/path/to/source > coverage.xml
 
 
 Authors

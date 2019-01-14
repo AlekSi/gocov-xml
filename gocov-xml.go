@@ -74,28 +74,31 @@ type Line struct {
 }
 
 func main() {
-	basePtr := flag.String("base", "", "Base path of source.")
+	sourcePathPtr := flag.String(
+		"source",
+		"",
+		"Absolute path to source. Defaults to current working directory.",
+	)
 
 	flag.Parse()
 
-	var bpath string
-	var err error
-
 	// Parse the commandline arguments.
-	if *basePtr != "" {
-		bpath = *basePtr
-		if !filepath.IsAbs(bpath) {
-			panic(fmt.Sprintf("base path is a relative path: %s", bpath))
+	var sourcePath string
+	var err error
+	if *sourcePathPtr != "" {
+		sourcePath = *sourcePathPtr
+		if !filepath.IsAbs(sourcePath) {
+			panic(fmt.Sprintf("Source path is a relative path: %s", sourcePath))
 		}
 	} else {
-		bpath, err = os.Getwd()
+		sourcePath, err = os.Getwd()
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	sources := make([]string, 1)
-	sources[0] = bpath
+	sources[0] = sourcePath
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
 	err = json.NewDecoder(os.Stdin).Decode(&r)
@@ -113,7 +116,7 @@ func main() {
 		files := make(map[string]map[string]*Class)
 		for _, gFunction := range gPackage.Functions {
 			// get the releative path by base path.
-			fpath, err := filepath.Rel(bpath, gFunction.File)
+			fpath, err := filepath.Rel(sourcePath, gFunction.File)
 			if err != nil {
 				panic(err)
 			}
