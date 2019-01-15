@@ -28,7 +28,7 @@ go get github.com/AlekSi/gocov-xml
 
 ## Usage
 
-`gocov-xml` reads data from the standard input:
+> **NOTE**: `gocov-xml` reads data from the standard input.
 
 ```bash
 gocov [-source <absolute path to source>]
