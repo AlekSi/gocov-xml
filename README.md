@@ -59,4 +59,3 @@ gocov test github.com/gorilla/mux | gocov-xml -source /abs/path/to/source > cove
 - [Marin Bek (marinbek)](https://github.com/marinbek)
 - [Alex Castle (acastle)](https://github.com/acastle)
 - [Billy Yao (yaoyaozong)](https://github.com/yaoyaozong)
-- [Abhijith DA (abhijithda)](https://github.com/abhijithda)
