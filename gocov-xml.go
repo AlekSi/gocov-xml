@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -185,9 +186,21 @@ func main() {
 				p.LineHits += class.LineHits
 				class.LineRate = float32(class.LineHits) / float32(class.LineCount)
 				p.Classes = append(p.Classes, *class)
+				sort.Slice(class.Methods, func(i, j int) bool {
+					return class.Methods[i].Name < class.Methods[j].Name
+				})
+				sort.Slice(class.Lines, func(i, j int) bool {
+					return class.Lines[i].Number < class.Lines[j].Number
+				})
 			}
 			p.LineRate = float32(p.LineHits) / float32(p.LineCount)
 		}
+		sort.Slice(p.Classes, func(i, j int) bool {
+			if p.Classes[i].Filename != p.Classes[j].Filename {
+				return p.Classes[i].Filename < p.Classes[j].Filename
+			}
+			return p.Classes[i].Name < p.Classes[j].Name
+		})
 		packages[i] = p
 		totalLines += p.LineCount
 		totalHits += p.LineHits
