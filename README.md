@@ -21,6 +21,15 @@ The generated XML output is in the latest [coverage-04.dtd](http://cobertura.sou
 
 Just type the following to install the program and its dependencies:
 
+For Go 1.17 and above:
+
+```bash
+go install github.com/axw/gocov/gocov@latest
+go install github.com/AlekSi/gocov-xml@latest
+```
+
+For previous Go versions:
+
 ```bash
 go get github.com/axw/gocov/...
 go get github.com/AlekSi/gocov-xml
