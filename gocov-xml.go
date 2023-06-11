@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/axw/gocov"
 )
@@ -73,7 +73,21 @@ type Line struct {
 	Hits   int64 `xml:"hits,attr"`
 }
 
-func main() {
+func readUtfNoBOMEncodedContent() ([]byte, error) {
+	content, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, fmt.Errorf("error reading input: %v", err)
+	}
+
+	// Check if the content has UTF-8 BOM
+	if len(content) >= 3 && utf8.Valid(content[:3]) && content[0] == 0xEF && content[1] == 0xBB && content[2] == 0xBF {
+		content = content[3:] // Remove the BOM if present
+	}
+
+	return content, nil
+}
+
+func parseFlags() string {
 	sourcePathPtr := flag.String(
 		"source",
 		"",
@@ -82,47 +96,63 @@ func main() {
 
 	flag.Parse()
 
-	// Parse the commandline arguments.
-	var sourcePath string
-	var err error
-	if *sourcePathPtr != "" {
-		sourcePath = *sourcePathPtr
+	// Parse the command line arguments.
+	sourcePath := *sourcePathPtr
+	if sourcePath != "" {
 		if !filepath.IsAbs(sourcePath) {
 			panic(fmt.Sprintf("Source path is a relative path: %s", sourcePath))
 		}
 	} else {
-		sourcePath, err = os.Getwd()
+		wd, err := os.Getwd()
 		if err != nil {
 			panic(err)
 		}
+		sourcePath = wd
 	}
 
-	sources := make([]string, 1)
-	sources[0] = sourcePath
-	var r struct{ Packages []gocov.Package }
-	var totalLines, totalHits int64
-	err = json.NewDecoder(os.Stdin).Decode(&r)
+	return sourcePath
+}
+
+func readPackages() ([]gocov.Package, error) {
+	r := struct{ Packages []gocov.Package }{}
+
+	content, err := readUtfNoBOMEncodedContent()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
+	if len(content) == 0 {
+		return nil, fmt.Errorf("empty content")
+	}
+
+	// Parse the content as packages
+	if err := xml.Unmarshal(content, &r); err != nil {
+		return nil, fmt.Errorf("failed to parse coverage XML: %v", err)
+	}
+
+	return r.Packages, nil
+}
+
+func convertPackages(sourcePath string, packages []gocov.Package) ([]Package, int64, int64) {
 	fset := token.NewFileSet()
 	tokenFiles := make(map[string]*token.File)
 
-	// convert packages
-	packages := make([]Package, len(r.Packages))
-	for i, gPackage := range r.Packages {
-		// group functions by filename and "class" (type)
+	packagesXML := make([]Package, len(packages))
+	var totalLines, totalHits int64
+
+	// Convert gocov.Package to Package
+	for i, gPackage := range packages {
+		// Group functions by filename and "class" (type)
 		files := make(map[string]map[string]*Class)
 		for _, gFunction := range gPackage.Functions {
-			// get the releative path by base path.
+			// Get the relative path by base path
 			fpath, err := filepath.Rel(sourcePath, gFunction.File)
 			if err != nil {
 				panic(err)
 			}
 			classes := files[fpath]
 			if classes == nil {
-				// group functions by "class" (type) in a File
+				// Group functions by "class" (type) in a File
 				classes = make(map[string]*Class)
 				files[fpath] = classes
 			}
@@ -135,7 +165,6 @@ func main() {
 				classes[className] = class
 			}
 
-			// from github.com/axw/gocov /gocov/annotate.go#printFunctionSource
 			// Load the file for line information. Probably overkill, maybe
 			// just compute the lines from offsets in here.
 			setContent := false
@@ -158,7 +187,7 @@ func main() {
 				tokenFile.SetLinesForContent(tokenData)
 			}
 
-			// convert statements to lines
+			// Convert statements to lines
 			lines := make([]Line, len(gFunction.Statements))
 			var funcHits int
 			for i, s := range gFunction.Statements {
@@ -177,7 +206,7 @@ func main() {
 			class.LineHits += int64(funcHits)
 		}
 
-		// fill package with "classes"
+		// Fill package with "classes"
 		p := Package{Name: gPackage.Name, Classes: []Class{}}
 		for _, classes := range files {
 			for _, class := range classes {
@@ -188,22 +217,58 @@ func main() {
 			}
 			p.LineRate = float32(p.LineHits) / float32(p.LineCount)
 		}
-		packages[i] = p
+		packagesXML[i] = p
 		totalLines += p.LineCount
 		totalHits += p.LineHits
 	}
 
-	coverage := Coverage{Sources: sources, Packages: packages, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), LinesCovered: float32(totalHits), LinesValid: int64(totalLines), LineRate: float32(totalHits) / float32(totalLines)}
+	return packagesXML, totalLines, totalHits
+}
+
+func generateCoverageXML(sources []string, packagesXML []Package, totalLines, totalHits int64) Coverage {
+	coverage := Coverage{
+		Sources:         sources,
+		Packages:        packagesXML,
+		Timestamp:       time.Now().UnixNano() / int64(time.Millisecond),
+		LinesCovered:    float32(totalHits),
+		LinesValid:      totalLines,
+		LineRate:        float32(totalHits) / float32(totalLines),
+		BranchRate:      0.0, // Set branch rate to 0 for now (unimplemented)
+		BranchesCovered: 0,   // Set branches covered to 0 for now (unimplemented)
+		BranchesValid:   0,   // Set total branches to 0 for now (unimplemented)
+		Complexity:      0.0, // Set complexity to 0 for now (unimplemented)
+		Version:         "",  // Version not specified in the original code
+	}
+
+	return coverage
+}
+
+func writeCoverageXML(coverage Coverage) {
 
 	fmt.Printf(xml.Header)
 	fmt.Printf("<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n")
 
 	encoder := xml.NewEncoder(os.Stdout)
 	encoder.Indent("", "\t")
-	err = encoder.Encode(coverage)
+	err := encoder.Encode(coverage)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println()
+}
+
+func main() {
+	sourcePath := parseFlags()
+
+	packages, err := readPackages()
+	if err != nil {
+		panic(err)
+	}
+
+	packagesXML, totalLines, totalHits := convertPackages(sourcePath, packages)
+
+	coverage := generateCoverageXML([]string{sourcePath}, packagesXML, totalLines, totalHits)
+
+	writeCoverageXML(coverage)
 }
