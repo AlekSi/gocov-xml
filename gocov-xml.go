@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/axw/gocov"
+	"github.com/afunix/gocov"
 )
 
 // Coverage information
