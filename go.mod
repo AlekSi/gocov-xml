@@ -1,5 +1,5 @@
 module github.com/AlekSi/gocov-xml
 
-go 1.13
+go 1.23.0
 
-require github.com/axw/gocov v1.1.0
+require github.com/afunix/gocov v1.2.2
