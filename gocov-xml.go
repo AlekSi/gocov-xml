@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -74,6 +76,27 @@ type Line struct {
 	Hits   int64 `xml:"hits,attr"`
 }
 
+func osStdinWithoutUTFBOM() io.Reader {
+	stdin := os.Stdin
+	readerAll, err := io.ReadAll(stdin)
+
+	bom := []byte{0xEF, 0xBB, 0xBF}
+
+	readerHasLengthSmallerThanUTFBom := func() bool {
+		return len(readerAll) < len(bom)
+	}
+
+	if err != nil || readerHasLengthSmallerThanUTFBom() {
+		return stdin
+	}
+
+	if bytes.Equal(readerAll[:len(bom)], bom) {
+		return io.MultiReader(bytes.NewReader(readerAll[len(bom):]), stdin)
+	}
+
+	return stdin
+}
+
 func main() {
 	sourcePathPtr := flag.String(
 		"source",
@@ -102,7 +125,7 @@ func main() {
 	sources[0] = sourcePath
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
-	err = json.NewDecoder(os.Stdin).Decode(&r)
+	err = json.NewDecoder(osStdinWithoutUTFBOM()).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
