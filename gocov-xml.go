@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -74,6 +77,24 @@ type Line struct {
 	Hits   int64 `xml:"hits,attr"`
 }
 
+func osStdinWithoutUTFBOM() io.Reader {
+	bom := []byte{0xEF, 0xBB, 0xBF}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	first3bytes, err := reader.Peek(3)
+
+	if err != nil && err != io.EOF {
+		return reader
+	}
+
+	if bytes.Equal(first3bytes, bom) {
+		reader.Discard(3)
+	}
+
+	return reader
+}
+
 func main() {
 	sourcePathPtr := flag.String(
 		"source",
@@ -102,7 +123,7 @@ func main() {
 	sources[0] = sourcePath
 	var r struct{ Packages []gocov.Package }
 	var totalLines, totalHits int64
-	err = json.NewDecoder(os.Stdin).Decode(&r)
+	err = json.NewDecoder(osStdinWithoutUTFBOM()).Decode(&r)
 	if err != nil {
 		panic(err)
 	}
